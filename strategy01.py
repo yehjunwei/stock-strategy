@@ -87,6 +87,7 @@ for i in nifty_50_stocks:
                       start='2018-01-01',
                       end=(dt.now() + delta(1)).strftime('%Y-%m-%d'),
                       progress=False)
+    _df.to_csv(f'data/{i}.csv')
 
     _df = add_signal_indicators(_df)
 
