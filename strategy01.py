@@ -82,7 +82,7 @@ trade_in_progress = False
 holding_period = 14
 
 for i in nifty_50_stocks:
-    _df = yf.download(f"{i}.NS",
+    _df = yf.download(f"{i}",
                       period='1d',
                       start='2018-01-01',
                       end=(dt.now() + delta(1)).strftime('%Y-%m-%d'),
@@ -95,3 +95,5 @@ for i in nifty_50_stocks:
     print(f'done performing backtesting for {i}')
     del _df
     trade_in_progress = False
+
+print(TRADES)
