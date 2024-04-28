@@ -7,6 +7,7 @@ from datetime import timedelta as delta
 import numpy as np
 import seaborn as sb
 import os
+import matplotlib.pyplot as plt
 
 signals = pd.DataFrame({
     '10_cross_30':[0,0,1,1,1],
@@ -97,4 +98,8 @@ for i in nifty_50_stocks:
     del _df
     trade_in_progress = False
 
-print(TRADES)
+pos = pd.DataFrame(TRADES).groupby('stock')['returns'].agg(['mean']).reset_index()
+pos = pos.sort_values(by='mean', ascending=False).head(10)
+ax = sb.barplot(x='stock', y='mean', data=pos)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+plt.show()
