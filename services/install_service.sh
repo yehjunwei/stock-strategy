@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 台股數據獲取服務安裝腳本
+# 臺股數據獲取服務安裝腳本
 # 用途: 在 Linux 系統上安裝 systemd service，每小時自動獲取股票數據
 #
 
@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}======================================${NC}"
-echo -e "${GREEN}台股數據獲取服務安裝腳本${NC}"
+echo -e "${GREEN}臺股數據獲取服務安裝腳本${NC}"
 echo -e "${GREEN}======================================${NC}\n"
 
 # 檢查是否為 root
@@ -25,7 +25,8 @@ fi
 
 # 獲取當前目錄
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo -e "${YELLOW}項目目錄: ${SCRIPT_DIR}${NC}\n"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+echo -e "${YELLOW}項目目錄: ${PROJECT_ROOT}${NC}\n"
 
 # 獲取實際用戶（即使使用 sudo）
 REAL_USER="${SUDO_USER:-$USER}"
@@ -64,62 +65,62 @@ echo -e "${GREEN}✓ 日誌文件: /var/log/stock-fetcher.log${NC}\n"
 
 # 創建 data 目錄
 echo "創建數據目錄..."
-mkdir -p "${SCRIPT_DIR}/data"
-chown ${REAL_USER}:${REAL_USER} "${SCRIPT_DIR}/data"
-echo -e "${GREEN}✓ 數據目錄: ${SCRIPT_DIR}/data${NC}\n"
+mkdir -p "${PROJECT_ROOT}/data"
+chown ${REAL_USER}:${REAL_USER} "${PROJECT_ROOT}/data"
+echo -e "${GREEN}✓ 數據目錄: ${PROJECT_ROOT}/data${NC}\n"
 
-# 复制并配置 service 文件
+# 複製並配置 service 文件
 echo "配置 systemd service..."
 SERVICE_FILE="/etc/systemd/system/stock-fetcher.service"
 TIMER_FILE="/etc/systemd/system/stock-fetcher.timer"
 
-# 替换 service 文件中的占位符
+# 替換 service 文件中的佔位符
 sed -e "s|YOUR_USERNAME|${REAL_USER}|g" \
-    -e "s|/path/to/stock-strategy|${SCRIPT_DIR}|g" \
+    -e "s|/path/to/stock-strategy|${PROJECT_ROOT}|g" \
     -e "s|/usr/bin/python3|${PYTHON_PATH}|g" \
     "${SCRIPT_DIR}/stock-fetcher.service" > "${SERVICE_FILE}"
 
-# 复制 timer 文件
+# 複製 timer 文件
 cp "${SCRIPT_DIR}/stock-fetcher.timer" "${TIMER_FILE}"
 
-echo -e "${GREEN}✓ Service 文件已创建:${NC}"
+echo -e "${GREEN}✓ Service 文件已創建:${NC}"
 echo "  - ${SERVICE_FILE}"
 echo "  - ${TIMER_FILE}"
 echo ""
 
-# 重载 systemd
-echo "重载 systemd..."
+# 重載 systemd
+echo "重載 systemd..."
 systemctl daemon-reload
-echo -e "${GREEN}✓ Systemd 已重载${NC}\n"
+echo -e "${GREEN}✓ Systemd 已重載${NC}\n"
 
-# 启用并启动 timer
-echo "启动 service..."
+# 啓用並啓動 timer
+echo "啓動 service..."
 systemctl enable stock-fetcher.timer
 systemctl start stock-fetcher.timer
-echo -e "${GREEN}✓ Timer 已启动并设置为开机自启${NC}\n"
+echo -e "${GREEN}✓ Timer 已啓動並設置爲開機自啓${NC}\n"
 
-# 显示状态
+# 顯示狀態
 echo -e "${GREEN}======================================${NC}"
-echo -e "${GREEN}安装完成！${NC}"
+echo -e "${GREEN}安裝完成！${NC}"
 echo -e "${GREEN}======================================${NC}\n"
 
-echo "服务信息:"
-echo "  - Service 名称: stock-fetcher.service"
-echo "  - Timer 名称: stock-fetcher.timer"
-echo "  - 运行频率: 每小时一次"
-echo "  - 日志文件: /var/log/stock-fetcher.log"
-echo "  - 数据文件: ${SCRIPT_DIR}/data/taiwan_stocks.csv"
+echo "服務信息:"
+echo "  - Service 名稱: stock-fetcher.service"
+echo "  - Timer 名稱: stock-fetcher.timer"
+echo "  - 運行頻率: 每小時一次"
+echo "  - 日誌文件: /var/log/stock-fetcher.log"
+echo "  - 數據文件: ${PROJECT_ROOT}/data/taiwan_stocks.csv"
 echo ""
 
 echo "常用命令:"
-echo "  查看 timer 状态:    sudo systemctl status stock-fetcher.timer"
-echo "  查看 service 状态:  sudo systemctl status stock-fetcher.service"
-echo "  查看执行历史:       sudo journalctl -u stock-fetcher.service"
-echo "  查看日志:           sudo tail -f /var/log/stock-fetcher.log"
-echo "  手动运行一次:       sudo systemctl start stock-fetcher.service"
+echo "  查看 timer 狀態:    sudo systemctl status stock-fetcher.timer"
+echo "  查看 service 狀態:  sudo systemctl status stock-fetcher.service"
+echo "  查看執行歷史:       sudo journalctl -u stock-fetcher.service"
+echo "  查看日誌:           sudo tail -f /var/log/stock-fetcher.log"
+echo "  手動運行一次:       sudo systemctl start stock-fetcher.service"
 echo "  停止 timer:         sudo systemctl stop stock-fetcher.timer"
 echo "  禁用 timer:         sudo systemctl disable stock-fetcher.timer"
 echo ""
 
-echo -e "${YELLOW}提示: Timer 将在下一个整点运行，或者你可以手动运行一次${NC}"
+echo -e "${YELLOW}提示: Timer 將在下一個整點運行，或者你可以手動運行一次${NC}"
 echo ""

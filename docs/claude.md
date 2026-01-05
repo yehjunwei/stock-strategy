@@ -1,18 +1,18 @@
 # Stock Strategy - 專案記錄
 
 ## 專案簡介
-台股歷史數據獲取與策略回測系統
+臺股歷史數據獲取與策略回測系統
 
 ## 執行指令記錄
 
 ### 2026-01-05
 
-#### 台股數據抓取
+#### 臺股數據抓取
 ```bash
-# 執行台股數據抓取（增量更新）
+# 執行臺股數據抓取（增量更新）
 python3 scripts/fetch_stocks.py
 
-# 測試單一股票（例如：2330 台積電）
+# 測試單一股票（例如：2330 臺積電）
 python3 scripts/fetch_stocks.py --test 2330
 
 # 測試另一支股票（例如：2317 鴻海）
@@ -28,7 +28,7 @@ python3 scripts/fetch_stocks.py --test 2317
 ## 技術架構
 
 ### 數據來源
-- **FinMind API**: 台股歷史數據
+- **FinMind API**: 臺股歷史數據
 - **API Token**: 已配置（600 次/小時）
 
 ### 數據格式
@@ -39,7 +39,7 @@ date | stock_id | stock_name | open | high | low | close | volume
 **範例：**
 ```csv
 date,stock_id,stock_name,open,high,low,close,volume
-2026-01-05,2330,台積電,1630.0,1695.0,1625.0,1670.0,76182999
+2026-01-05,2330,臺積電,1630.0,1695.0,1625.0,1670.0,76182999
 2026-01-05,2317,鴻海,114.0,114.5,113.5,114.0,50123456
 ```
 
@@ -58,7 +58,7 @@ stock-strategy/
 │   ├── uninstall_service.sh
 │   └── manage.sh
 ├── data/                     # 數據目錄
-│   ├── taiwan_stocks.csv     # 台股歷史數據（支持多股票）
+│   ├── taiwan_stocks.csv     # 臺股歷史數據（支持多股票）
 │   ├── stock_list.txt        # 股票代號列表（每天更新）
 │   └── stock_list.json       # 股票列表詳細信息（含更新時間）
 ├── docs/                     # 文檔
@@ -136,7 +136,7 @@ Food
   - 移除不需要的文件（`__pycache__`）
 
 - **多股票支持驗證**：
-  - 測試 2330（台積電）：成功抓取並存入 CSV
+  - 測試 2330（臺積電）：成功抓取並存入 CSV
   - 測試 2317（鴻海）：成功追加到同一 CSV
   - 驗證 CSV 可無限擴展，支持多股票數據
   - 數據按 `date` 和 `stock_id` 正確排序
@@ -151,7 +151,7 @@ Food
   - 新增 `_save_stock_list()` 方法
   - 每次獲取股票列表時自動保存到 `data/` 目錄
   - 生成三種格式：
-    - `stock_list.txt`：制表符分隔，包含股票代號和中文名稱
+    - `stock_list.txt`：製表符分隔，包含股票代號和中文名稱
     - `stock_list.csv`：CSV 格式，包含 stock_id 和 stock_name 欄位
     - `stock_list.json`：JSON 格式，包含更新時間、總數量、篩選條件等詳細信息
   - 每天執行服務時自動更新（追蹤新上市/下市股票）

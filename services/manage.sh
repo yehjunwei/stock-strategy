@@ -91,7 +91,7 @@ restart_timer() {
 }
 
 show_data() {
-    CSV_FILE="${SCRIPT_DIR}/data/taiwan_stocks.csv"
+    CSV_FILE="${SCRIPT_DIR}/../data/taiwan_stocks.csv"
 
     if [[ ! -f "$CSV_FILE" ]]; then
         echo -e "${YELLOW}数据文件不存在: ${CSV_FILE}${NC}"

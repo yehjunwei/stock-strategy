@@ -1,11 +1,11 @@
-# 快速开始指南
+# 快速開始指南
 
-## 🚀 Linux 服务器一键部署（推荐）
+## 🚀 Linux 服務器一鍵部署（推薦）
 
-### 1. 上传项目到服务器
+### 1. 上傳項目到服務器
 
 ```bash
-# 使用 scp 上传
+# 使用 scp 上傳
 scp -r stock-strategy user@your-server:/home/user/
 
 # 或使用 git
@@ -14,7 +14,7 @@ git clone <your-repo-url>
 cd stock-strategy
 ```
 
-### 2. 运行安装脚本
+### 2. 運行安裝腳本
 
 ```bash
 sudo bash install_service.sh
@@ -22,54 +22,54 @@ sudo bash install_service.sh
 
 ### 3. 完成！
 
-服务已启动，每小时自动运行一次，自动补齐数据到 2000 年。
+服務已啓動，每小時自動運行一次，自動補齊數據到 2000 年。
 
 ---
 
-## 📊 查看状态
+## 📊 查看狀態
 
 ```bash
-# 查看服务状态
+# 查看服務狀態
 bash manage.sh status
 
-# 查看实时日志
+# 查看實時日誌
 bash manage.sh logs
 
-# 查看数据信息
+# 查看數據信息
 bash manage.sh data
 ```
 
 ---
 
-## 🔧 手动运行（本地测试）
+## 🔧 手動運行（本地測試）
 
-如果你想在本地手动运行：
+如果你想在本地手動運行：
 
-### 1. 安装依赖
+### 1. 安裝依賴
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 运行程序
+### 2. 運行程序
 
 ```bash
 python fetch_taiwan_stocks.py
 ```
 
-### 3. 再次运行（补充更多数据）
+### 3. 再次運行（補充更多數據）
 
 ```bash
 python fetch_taiwan_stocks.py
 ```
 
-每次执行会往前补充 1 年数据，重复约 25 次即可补齐到 2000 年。
+每次執行會往前補充 1 年數據，重複約 25 次即可補齊到 2000 年。
 
 ---
 
-## 📁 数据文件
+## 📁 數據文件
 
-获取的数据保存在：
+獲取的數據保存在：
 ```
 data/taiwan_stocks.csv
 ```
@@ -82,49 +82,49 @@ date,stock_id,open,high,low,close,volume
 
 ---
 
-## ⏱️ 预计时间
+## ⏱️ 預計時間
 
-- **单次运行**: 10-30 分钟（约 1200 支股票）
-- **完整补齐**: 2-3 天（自动运行，每小时一次）
-- **数据量**: 约 200-300 MB（2000-2026 年）
+- **單次運行**: 10-30 分鐘（約 1200 支股票）
+- **完整補齊**: 2-3 天（自動運行，每小時一次）
+- **數據量**: 約 200-300 MB（2000-2026 年）
 
 ---
 
 ## 🔑 API Token 已配置
 
 已使用 FinMind API Token:
-- 每小时限制: 600 次请求
-- 延迟优化: 0.2 秒/次
-- 无需额外配置
+- 每小時限制: 600 次請求
+- 延遲優化: 0.2 秒/次
+- 無需額外配置
 
 ---
 
-## 📖 更多文档
+## 📖 更多文檔
 
-- **完整说明**: [README.md](README.md)
+- **完整說明**: [README.md](README.md)
 - **部署指南**: [DEPLOY.md](DEPLOY.md)
 - **管理命令**: `bash manage.sh help`
 
 ---
 
-## ❓ 常见问题
+## ❓ 常見問題
 
-**Q: 如何知道数据已补齐？**
+**Q: 如何知道數據已補齊？**
 ```bash
 bash manage.sh data
-# 查看日期范围，当最早日期为 2000-01-01 即完成
+# 查看日期範圍，當最早日期爲 2000-01-01 即完成
 ```
 
-**Q: 如何停止服务？**
+**Q: 如何停止服務？**
 ```bash
 bash manage.sh stop
 ```
 
-**Q: 如何卸载？**
+**Q: 如何卸載？**
 ```bash
 sudo bash uninstall_service.sh
 ```
 
 ---
 
-**需要帮助？** 查看 [README.md](README.md) 或 [DEPLOY.md](DEPLOY.md)
+**需要幫助？** 查看 [README.md](README.md) 或 [DEPLOY.md](DEPLOY.md)

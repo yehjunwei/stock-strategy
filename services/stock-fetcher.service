@@ -6,7 +6,7 @@ After=network.target
 Type=oneshot
 User=YOUR_USERNAME
 WorkingDirectory=/path/to/stock-strategy
-ExecStart=/usr/bin/python3 /path/to/stock-strategy/fetch_taiwan_stocks.py
+ExecStart=/usr/bin/python3 /path/to/stock-strategy/scripts/fetch_stocks.py
 
 # 日志输出
 StandardOutput=append:/var/log/stock-fetcher.log
