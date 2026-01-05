@@ -1,6 +1,6 @@
 """
-臺股數據獲取器核心類
-提供臺股歷史數據的增量獲取功能
+臺股資料獲取器核心類
+提供臺股歷史資料的增量獲取功能
 """
 
 import pandas as pd
@@ -17,7 +17,7 @@ except ImportError:
 
 
 class TaiwanStockFetcher:
-    """臺股數據增量獲取器"""
+    """臺股資料增量獲取器"""
 
     TARGET_START_DATE = "2000-01-01"
     CSV_FILENAME = "taiwan_stocks.csv"
@@ -28,19 +28,19 @@ class TaiwanStockFetcher:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.csv_path = self.output_dir / self.CSV_FILENAME
-        self.stock_name_map = {}  # 股票代號 -> 中文名稱映射
+        self.stock_name_map = {}  # 股票代號 -> 中文名稱對應
 
         if api_token:
             self.api.login_by_token(api_token=api_token)
-            print("✓ 已使用 API Token 登錄")
+            print("✓ 已使用 API Token 登入")
         else:
             print("ℹ️  未使用 API Token（請求頻率受限）")
 
-        # 嘗試從現有文件加載股票名稱映射
+        # 嘗試從現有檔案載入股票名稱對應
         self._load_stock_name_map()
 
     def _load_stock_name_map(self):
-        """從現有的 stock_list.json 加載股票名稱映射"""
+        """從現有的 stock_list.json 載入股票名稱對應"""
         json_path = self.output_dir / "stock_list.json"
         if json_path.exists():
             try:
@@ -48,13 +48,13 @@ class TaiwanStockFetcher:
                     data = json.load(f)
                     for stock in data.get('stocks', []):
                         self.stock_name_map[stock['stock_id']] = stock['stock_name']
-                print(f"✓ 已加載 {len(self.stock_name_map)} 個股票名稱映射")
+                print(f"✓ 已載入 {len(self.stock_name_map)} 個股票名稱對應")
             except Exception as e:
-                print(f"⚠️  加載股票名稱映射失敗: {e}")
+                print(f"⚠️  載入股票名稱對應失敗: {e}")
 
     def get_existing_data_info(self):
         """
-        獲取現有數據信息
+        獲取現有資料資訊
         返回: (是否存在, 最早日期, 最晚日期, 記錄數)
         """
         if not self.csv_path.exists():
@@ -72,7 +72,7 @@ class TaiwanStockFetcher:
             return True, earliest, latest, count
 
         except Exception as e:
-            print(f"⚠️  讀取現有數據失敗: {e}")
+            print(f"⚠️  讀取現有資料失敗: {e}")
             return False, None, None, 0
 
     def calculate_fetch_ranges(self, existing_earliest_date, existing_latest_date):
@@ -80,8 +80,8 @@ class TaiwanStockFetcher:
         計算需要獲取的日期範圍（兩階段）
 
         策略:
-        1. 第一階段：從最新日期到今天（補齊最新數據）
-        2. 第二階段：從最早日期往回抓到 2000 年（補齊歷史數據）
+        1. 第一階段：從最新日期到今天（補齊最新資料）
+        2. 第二階段：從最早日期往回抓到 2000 年（補齊歷史資料）
 
         返回: [(start_date, end_date, description), ...]
         """
@@ -94,7 +94,7 @@ class TaiwanStockFetcher:
             ranges.append((
                 start_date.strftime('%Y-%m-%d'),
                 today.strftime('%Y-%m-%d'),
-                "首次運行（最近1年）"
+                "首次執行（最近1年）"
             ))
         else:
             latest_date = datetime.strptime(existing_latest_date, "%Y-%m-%d")
@@ -104,7 +104,7 @@ class TaiwanStockFetcher:
                 ranges.append((
                     (latest_date + timedelta(days=1)).strftime('%Y-%m-%d'),
                     today.strftime('%Y-%m-%d'),
-                    f"更新最新數據（補齊 {days_gap} 天）"
+                    f"更新最新資料（補齊 {days_gap} 天）"
                 ))
 
             if existing_earliest_date:
@@ -121,7 +121,7 @@ class TaiwanStockFetcher:
                     ranges.append((
                         start_date.strftime('%Y-%m-%d'),
                         end_date.strftime('%Y-%m-%d'),
-                        f"補充歷史數據（往前 {days_to_fetch} 天）"
+                        f"補充歷史資料（往前 {days_to_fetch} 天）"
                     ))
 
         return ranges
@@ -140,7 +140,7 @@ class TaiwanStockFetcher:
                     (stock_info['stock_id'].str.len() == 4)
                 ]
 
-                # 建立股票代號到名稱的映射
+                # 建立股票代號到名稱的對應
                 self.stock_name_map = dict(
                     zip(filtered['stock_id'], filtered['stock_name'])
                 )
@@ -148,7 +148,7 @@ class TaiwanStockFetcher:
                 sorted_stocks = sorted(filtered['stock_id'].unique().tolist())
                 print(f"✓ 獲取到 {len(sorted_stocks)} 支上市股票")
 
-                # 保存股票列表到文件
+                # 儲存股票列表到檔案
                 self._save_stock_list(sorted_stocks)
 
                 return sorted_stocks
@@ -161,18 +161,18 @@ class TaiwanStockFetcher:
             return []
 
     def _save_stock_list(self, stocks):
-        """保存股票列表到文件"""
+        """儲存股票列表到檔案"""
         if not stocks:
             return
 
-        # 保存為 TXT 文件（股票代號 + 中文名稱）
+        # 儲存為 TXT 檔案（股票代號 + 中文名稱）
         txt_path = self.output_dir / "stock_list.txt"
         with open(txt_path, 'w', encoding='utf-8') as f:
             for stock_id in stocks:
                 stock_name = self.stock_name_map.get(stock_id, '')
                 f.write(f"{stock_id}\t{stock_name}\n")
 
-        # 保存為 CSV 文件（方便 Excel 打開）
+        # 儲存為 CSV 檔案（方便 Excel 開啟）
         csv_path = self.output_dir / "stock_list.csv"
         with open(csv_path, 'w', encoding='utf-8-sig') as f:
             f.write("stock_id,stock_name\n")
@@ -180,7 +180,7 @@ class TaiwanStockFetcher:
                 stock_name = self.stock_name_map.get(stock_id, '')
                 f.write(f"{stock_id},{stock_name}\n")
 
-        # 保存為 JSON 文件（包含詳細信息）
+        # 儲存為 JSON 檔案（包含詳細資訊）
         json_path = self.output_dir / "stock_list.json"
         stock_list_with_names = [
             {"stock_id": stock_id, "stock_name": self.stock_name_map.get(stock_id, '')}
@@ -198,13 +198,13 @@ class TaiwanStockFetcher:
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(stock_info, f, ensure_ascii=False, indent=2)
 
-        print(f"✓ 股票列表已保存到:")
-        print(f"   - {txt_path} (製表符分隔)")
+        print(f"✓ 股票列表已儲存到:")
+        print(f"   - {txt_path} (Tab 字元分隔)")
         print(f"   - {csv_path} (CSV格式)")
         print(f"   - {json_path} (JSON格式)")
 
     def fetch_stock_data(self, stock_id, start_date, end_date):
-        """獲取單一股票的歷史數據"""
+        """獲取單一股票的歷史資料"""
         try:
             df = self.api.taiwan_stock_daily(
                 stock_id=stock_id,
@@ -234,9 +234,9 @@ class TaiwanStockFetcher:
             return None
 
     def fetch_batch(self, stock_list, start_date, end_date, delay=0.5):
-        """批量獲取股票數據"""
+        """批次獲取股票資料"""
         print(f"\n{'='*70}")
-        print(f"📥 開始獲取數據: {start_date} 至 {end_date}")
+        print(f"📥 開始獲取資料: {start_date} 至 {end_date}")
         print(f"{'='*70}\n")
 
         all_data = []
@@ -269,11 +269,11 @@ class TaiwanStockFetcher:
             self._print_batch_summary(final_df, success_count, fail_count, total)
             return final_df
         else:
-            print("\n❌ 未獲取到任何數據")
+            print("\n❌ 未獲取到任何資料")
             return pd.DataFrame()
 
     def _print_batch_summary(self, df, success_count, fail_count, total):
-        """打印批次獲取摘要"""
+        """列印批次獲取摘要"""
         print(f"\n{'='*70}")
         print(f"✓ 本次獲取完成")
         print(f"  新增記錄: {len(df):,} 條")
@@ -282,17 +282,17 @@ class TaiwanStockFetcher:
         print(f"{'='*70}\n")
 
     def merge_and_save(self, new_df):
-        """合併新舊數據並保存"""
+        """合併新舊資料並儲存"""
         if new_df.empty:
-            print("⚠️  沒有新數據需要保存")
+            print("⚠️  沒有新資料需要儲存")
             return
 
         if self.csv_path.exists():
-            print("📂 正在讀取現有數據...")
+            print("📂 正在讀取現有資料...")
             existing_df = pd.read_csv(self.csv_path, dtype={'stock_id': str})
             print(f"   現有記錄: {len(existing_df):,} 條")
 
-            # 為舊數據填充缺失的 stock_name
+            # 為舊資料填充缺失的 stock_name
             if 'stock_name' not in existing_df.columns:
                 existing_df['stock_name'] = ''
 
@@ -303,7 +303,7 @@ class TaiwanStockFetcher:
                     self.stock_name_map
                 ).fillna('')
 
-            print("🔄 合併新舊數據...")
+            print("🔄 合併新舊資料...")
             combined_df = pd.concat([existing_df, new_df], ignore_index=True)
 
             # 填充所有空的 stock_name
@@ -319,41 +319,41 @@ class TaiwanStockFetcher:
                 keep='last'
             )
         else:
-            print("📝 創建新數據文件...")
+            print("📝 建立新資料檔案...")
             combined_df = new_df
 
-        print("📊 排序數據...")
+        print("📊 排序資料...")
         combined_df = combined_df.sort_values(['date', 'stock_id']).reset_index(drop=True)
 
-        # 確保列順序正確
+        # 確保欄位順序正確
         desired_columns = ['date', 'stock_id', 'stock_name', 'open', 'high', 'low', 'close', 'volume']
         combined_df = combined_df[desired_columns]
 
-        print(f"💾 保存到 {self.csv_path}...")
+        print(f"💾 儲存到 {self.csv_path}...")
         combined_df.to_csv(self.csv_path, index=False, encoding='utf-8-sig')
 
         self._print_save_summary(combined_df)
 
     def _print_save_summary(self, df):
-        """打印保存摘要"""
+        """列印儲存摘要"""
         file_size_mb = self.csv_path.stat().st_size / 1024 / 1024
         date_range = f"{df['date'].min()} ~ {df['date'].max()}"
         stock_count = df['stock_id'].nunique()
 
         print(f"\n{'='*70}")
-        print(f"✅ 數據已保存")
-        print(f"   文件路徑: {self.csv_path}")
-        print(f"   文件大小: {file_size_mb:.2f} MB")
+        print(f"✅ 資料已儲存")
+        print(f"   檔案路徑: {self.csv_path}")
+        print(f"   檔案大小: {file_size_mb:.2f} MB")
         print(f"   總記錄數: {len(df):,} 條")
         print(f"   股票數量: {stock_count} 支")
         print(f"   日期範圍: {date_range}")
         print(f"{'='*70}\n")
 
     def show_preview(self, df, n=5):
-        """顯示數據預覽"""
+        """顯示資料預覽"""
         if df.empty:
             return
 
-        print(f"數據預覽（前 {n} 條）:")
+        print(f"資料預覽（前 {n} 條）:")
         print(df.head(n).to_string(index=False))
         print()

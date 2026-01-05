@@ -7,6 +7,7 @@ Type=oneshot
 User=YOUR_USERNAME
 WorkingDirectory=/path/to/stock-strategy
 ExecStart=/usr/bin/python3 /path/to/stock-strategy/scripts/fetch_stocks.py
+EnvironmentFile=/path/to/stock-strategy/.env
 
 # 日志输出
 StandardOutput=append:/var/log/stock-fetcher.log

@@ -69,6 +69,18 @@ mkdir -p "${PROJECT_ROOT}/data"
 chown ${REAL_USER}:${REAL_USER} "${PROJECT_ROOT}/data"
 echo -e "${GREEN}✓ 數據目錄: ${PROJECT_ROOT}/data${NC}\n"
 
+# 檢查 .env 文件
+echo "檢查 Line Messaging API 配置..."
+if [ ! -f "${PROJECT_ROOT}/.env" ]; then
+    echo -e "${YELLOW}警告: 未找到 .env 文件${NC}"
+    echo "如果需要 Line 通知功能，請在項目根目錄創建 .env 文件並填入您的憑證:"
+    echo "LINE_CHANNEL_ACCESS_TOKEN=YOUR_TOKEN"
+    echo "LINE_USER_ID=YOUR_USER_ID"
+    echo ""
+else
+    echo -e "${GREEN}✓ 找到 .env 文件${NC}\n"
+fi
+
 # 複製並配置 service 文件
 echo "配置 systemd service..."
 SERVICE_FILE="/etc/systemd/system/stock-fetcher.service"

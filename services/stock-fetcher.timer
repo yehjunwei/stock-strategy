@@ -3,13 +3,13 @@ Description=Taiwan Stock Data Fetcher Timer
 Requires=stock-fetcher.service
 
 [Timer]
-# 每小时运行一次
+# 每小時執行一次
 OnCalendar=hourly
-# 延迟随机 0-300 秒，避免同一时间大量请求
+# 延遲隨機 0-300 秒，避免同一時間大量請求
 RandomizedDelaySec=300
-# 服务启动后立即运行一次
+# 服務啟動後立即執行一次
 OnBootSec=1min
-# 如果错过了执行时间，立即执行
+# 如果錯過了執行時間，立即執行
 Persistent=true
 
 [Install]
