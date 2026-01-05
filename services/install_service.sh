@@ -1,72 +1,72 @@
 #!/bin/bash
 #
-# 台股数据获取服务安装脚本
-# 用途: 在 Linux 系统上安装 systemd service，每小时自动获取股票数据
+# 台股數據獲取服務安裝腳本
+# 用途: 在 Linux 系統上安裝 systemd service，每小時自動獲取股票數據
 #
 
 set -e
 
-# 颜色输出
+# 顏色輸出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}======================================${NC}"
-echo -e "${GREEN}台股数据获取服务安装脚本${NC}"
+echo -e "${GREEN}台股數據獲取服務安裝腳本${NC}"
 echo -e "${GREEN}======================================${NC}\n"
 
-# 检查是否为 root
+# 檢查是否為 root
 if [[ $EUID -ne 0 ]]; then
-   echo -e "${RED}错误: 此脚本需要 root 权限运行${NC}"
-   echo -e "请使用: sudo bash install_service.sh"
+   echo -e "${RED}錯誤: 此腳本需要 root 權限運行${NC}"
+   echo -e "請使用: sudo bash install_service.sh"
    exit 1
 fi
 
-# 获取当前目录
+# 獲取當前目錄
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo -e "${YELLOW}项目目录: ${SCRIPT_DIR}${NC}\n"
+echo -e "${YELLOW}項目目錄: ${SCRIPT_DIR}${NC}\n"
 
-# 获取实际用户（即使使用 sudo）
+# 獲取實際用戶（即使使用 sudo）
 REAL_USER="${SUDO_USER:-$USER}"
-echo -e "${YELLOW}运行用户: ${REAL_USER}${NC}\n"
+echo -e "${YELLOW}運行用戶: ${REAL_USER}${NC}\n"
 
-# 检查 Python 3
-echo "检查 Python 3..."
+# 檢查 Python 3
+echo "檢查 Python 3..."
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}错误: 未找到 Python 3${NC}"
-    echo "请先安装 Python 3: sudo apt install python3 python3-pip"
+    echo -e "${RED}錯誤: 未找到 Python 3${NC}"
+    echo "請先安裝 Python 3: sudo apt install python3 python3-pip"
     exit 1
 fi
 PYTHON_PATH=$(which python3)
 echo -e "${GREEN}✓ 找到 Python 3: ${PYTHON_PATH}${NC}\n"
 
-# 检查 pip3
-echo "检查 pip3..."
+# 檢查 pip3
+echo "檢查 pip3..."
 if ! command -v pip3 &> /dev/null; then
-    echo -e "${RED}错误: 未找到 pip3${NC}"
-    echo "请先安装: sudo apt install python3-pip"
+    echo -e "${RED}錯誤: 未找到 pip3${NC}"
+    echo "請先安裝: sudo apt install python3-pip"
     exit 1
 fi
 echo -e "${GREEN}✓ 找到 pip3${NC}\n"
 
-# 安装 Python 依赖
-echo "安装 Python 依赖..."
+# 安裝 Python 依賴
+echo "安裝 Python 依賴..."
 pip3 install -r "${SCRIPT_DIR}/../requirements.txt" --quiet
-echo -e "${GREEN}✓ Python 依赖安装完成${NC}\n"
+echo -e "${GREEN}✓ Python 依賴安裝完成${NC}\n"
 
-# 创建日志目录
-echo "创建日志目录..."
+# 創建日誌目錄
+echo "創建日誌目錄..."
 mkdir -p /var/log
 touch /var/log/stock-fetcher.log
 chown ${REAL_USER}:${REAL_USER} /var/log/stock-fetcher.log
-echo -e "${GREEN}✓ 日志文件: /var/log/stock-fetcher.log${NC}\n"
+echo -e "${GREEN}✓ 日誌文件: /var/log/stock-fetcher.log${NC}\n"
 
-# 创建 data 目录
-echo "创建数据目录..."
+# 創建 data 目錄
+echo "創建數據目錄..."
 mkdir -p "${SCRIPT_DIR}/data"
 chown ${REAL_USER}:${REAL_USER} "${SCRIPT_DIR}/data"
-echo -e "${GREEN}✓ 数据目录: ${SCRIPT_DIR}/data${NC}\n"
+echo -e "${GREEN}✓ 數據目錄: ${SCRIPT_DIR}/data${NC}\n"
 
 # 复制并配置 service 文件
 echo "配置 systemd service..."
