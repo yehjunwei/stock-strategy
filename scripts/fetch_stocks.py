@@ -12,6 +12,24 @@ from datetime import datetime
 import time
 import os
 
+# 嘗試載入 python-dotenv（如果有安裝的話）
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("✓ 使用 python-dotenv 載入環境變數")
+except ImportError:
+    # systemd 會透過 EnvironmentFile 載入 .env
+    # 手動執行時如果沒有 python-dotenv，嘗試手動載入
+    env_file = Path(__file__).parent.parent / '.env'
+    if env_file.exists():
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ.setdefault(key, value)
+        print("ℹ️  手動載入 .env 檔案（未安裝 python-dotenv）")
+
 # 添加父目錄到 Python 路徑以導入 core 模組
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -140,8 +158,8 @@ def main():
     status_message = "✅ 執行成功"
     total_new = 0
 
-    # API Token 配置
-    api_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRlIjoiMjAyNi0wMS0wNiAwMDo1OTo0MCIsInVzZXJfaWQiOiJ5ZWhqdW53ZWkiLCJlbWFpbCI6InllaGp1bndlaUBnbWFpbC5jb20iLCJpcCI6IjgyLjE0MC4xODcuMjMifQ.cJNVY5xd2VHJHywKUzr89hewHWtZLymLyKzlAK0wPvs"
+    # API Token 配置（從環境變數載入）
+    api_token = os.getenv('FINMIND_API_TOKEN')
     fetcher = TaiwanStockFetcher(api_token=api_token)
 
     try:

@@ -133,6 +133,19 @@ class TaiwanStockFetcher:
         try:
             stock_info = self.api.taiwan_stock_info()
 
+            # 除錯資訊
+            print(f"🔍 API 回應類型: {type(stock_info)}")
+            if stock_info is None:
+                print("⚠️  API 回應為 None")
+                return []
+
+            # 檢查是否為 DataFrame
+            if hasattr(stock_info, 'empty'):
+                print(f"🔍 DataFrame 是否為空: {stock_info.empty}")
+                if not stock_info.empty:
+                    print(f"🔍 DataFrame 欄位: {stock_info.columns.tolist()}")
+                    print(f"🔍 DataFrame 行數: {len(stock_info)}")
+
             if stock_info is not None and not stock_info.empty:
                 # 篩選上市股票（4位數代碼）
                 filtered = stock_info[
@@ -153,11 +166,19 @@ class TaiwanStockFetcher:
 
                 return sorted_stocks
             else:
-                print("❌ 無法獲取股票列表")
+                print("❌ 無法獲取股票列表（回應為空）")
                 return []
 
+        except KeyError as e:
+            print(f"❌ KeyError: {e}")
+            print(f"🔍 這可能是 FinMind API 回應格式問題")
+            import traceback
+            traceback.print_exc()
+            return []
         except Exception as e:
-            print(f"❌ 獲取股票列表失敗: {e}")
+            print(f"❌ 獲取股票列表失敗: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             return []
 
     def _save_stock_list(self, stocks):
