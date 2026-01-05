@@ -52,7 +52,7 @@ echo -e "${GREEN}✓ 找到 pip3${NC}\n"
 
 # 安装 Python 依赖
 echo "安装 Python 依赖..."
-pip3 install -r "${SCRIPT_DIR}/requirements.txt" --quiet
+pip3 install -r "${SCRIPT_DIR}/../requirements.txt" --quiet
 echo -e "${GREEN}✓ Python 依赖安装完成${NC}\n"
 
 # 创建日志目录
