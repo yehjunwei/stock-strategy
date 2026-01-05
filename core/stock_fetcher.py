@@ -126,10 +126,23 @@ class TaiwanStockFetcher:
 
         return ranges
 
-    def get_stock_list(self):
-        """獲取所有上市股票列表"""
+    def get_stock_list(self, force_update=False):
+        """
+        獲取所有上市股票列表
+
+        Args:
+            force_update: 是否強制從 API 更新（預設 False，會先檢查快取）
+        """
         print("\n📋 正在獲取臺股列表...")
 
+        # 檢查是否有當天的快取
+        if not force_update:
+            cached_stocks = self._load_cached_stock_list()
+            if cached_stocks:
+                return cached_stocks
+
+        # 快取不存在或已過期，從 API 獲取
+        print("🌐 從 API 獲取最新股票列表...")
         try:
             stock_info = self.api.taiwan_stock_info()
 
@@ -180,6 +193,53 @@ class TaiwanStockFetcher:
             import traceback
             traceback.print_exc()
             return []
+
+    def _load_cached_stock_list(self):
+        """
+        從快取檔案載入股票列表（如果是當天更新的）
+
+        Returns:
+            list: 股票代號列表，如果快取不存在或已過期則返回 None
+        """
+        json_path = self.output_dir / "stock_list.json"
+
+        if not json_path.exists():
+            return None
+
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            # 檢查更新時間
+            update_time_str = data.get('update_time')
+            if not update_time_str:
+                print("⚠️  快取檔案缺少更新時間，將重新獲取")
+                return None
+
+            # 解析更新時間
+            update_time = datetime.strptime(update_time_str, '%Y-%m-%d %H:%M:%S')
+            today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+            # 檢查是否為當天更新
+            if update_time >= today:
+                stocks = [stock['stock_id'] for stock in data.get('stocks', [])]
+
+                # 同時載入股票名稱對應
+                self.stock_name_map = {
+                    stock['stock_id']: stock['stock_name']
+                    for stock in data.get('stocks', [])
+                }
+
+                print(f"✓ 使用快取的股票列表（更新時間: {update_time_str}）")
+                print(f"✓ 共 {len(stocks)} 支股票")
+                return stocks
+            else:
+                print(f"ℹ️  快取已過期（更新時間: {update_time_str}），將重新獲取")
+                return None
+
+        except Exception as e:
+            print(f"⚠️  讀取快取失敗: {e}")
+            return None
 
     def _save_stock_list(self, stocks):
         """儲存股票列表到檔案"""
