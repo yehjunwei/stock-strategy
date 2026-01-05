@@ -1,0 +1,359 @@
+"""
+台股數據獲取器核心類
+提供台股歷史數據的增量獲取功能
+"""
+
+import pandas as pd
+from datetime import datetime, timedelta
+import time
+from pathlib import Path
+import json
+
+try:
+    from FinMind.data import DataLoader
+except ImportError:
+    print("❌ 请先安装依赖: pip install -r requirements.txt")
+    exit(1)
+
+
+class TaiwanStockFetcher:
+    """台股数据增量获取器"""
+
+    TARGET_START_DATE = "2000-01-01"
+    CSV_FILENAME = "taiwan_stocks.csv"
+
+    def __init__(self, api_token=None, output_dir="data"):
+        """初始化獲取器"""
+        self.api = DataLoader()
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(exist_ok=True)
+        self.csv_path = self.output_dir / self.CSV_FILENAME
+        self.stock_name_map = {}  # 股票代號 -> 中文名稱映射
+
+        if api_token:
+            self.api.login_by_token(api_token=api_token)
+            print("✓ 已使用 API Token 登录")
+        else:
+            print("ℹ️  未使用 API Token（请求频率受限）")
+
+        # 嘗試從現有文件加載股票名稱映射
+        self._load_stock_name_map()
+
+    def _load_stock_name_map(self):
+        """從現有的 stock_list.json 加載股票名稱映射"""
+        json_path = self.output_dir / "stock_list.json"
+        if json_path.exists():
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for stock in data.get('stocks', []):
+                        self.stock_name_map[stock['stock_id']] = stock['stock_name']
+                print(f"✓ 已加载 {len(self.stock_name_map)} 个股票名称映射")
+            except Exception as e:
+                print(f"⚠️  加载股票名称映射失败: {e}")
+
+    def get_existing_data_info(self):
+        """
+        獲取現有數據信息
+        返回: (是否存在, 最早日期, 最晚日期, 記錄數)
+        """
+        if not self.csv_path.exists():
+            return False, None, None, 0
+
+        try:
+            df = pd.read_csv(self.csv_path, usecols=['date'])
+            if df.empty:
+                return False, None, None, 0
+
+            dates = pd.to_datetime(df['date']).sort_values()
+            earliest = dates.min().strftime('%Y-%m-%d')
+            latest = dates.max().strftime('%Y-%m-%d')
+            count = len(df)
+            return True, earliest, latest, count
+
+        except Exception as e:
+            print(f"⚠️  读取现有数据失败: {e}")
+            return False, None, None, 0
+
+    def calculate_fetch_ranges(self, existing_earliest_date, existing_latest_date):
+        """
+        計算需要獲取的日期範圍（兩階段）
+
+        策略:
+        1. 第一階段：從最新日期到今天（補齊最新數據）
+        2. 第二階段：從最早日期往回抓到 2000 年（補齊歷史數據）
+
+        返回: [(start_date, end_date, description), ...]
+        """
+        ranges = []
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        target_date = datetime.strptime(self.TARGET_START_DATE, "%Y-%m-%d")
+
+        if existing_latest_date is None:
+            start_date = today - timedelta(days=365)
+            ranges.append((
+                start_date.strftime('%Y-%m-%d'),
+                today.strftime('%Y-%m-%d'),
+                "首次运行（最近1年）"
+            ))
+        else:
+            latest_date = datetime.strptime(existing_latest_date, "%Y-%m-%d")
+            days_gap = (today - latest_date).days
+
+            if days_gap > 1:
+                ranges.append((
+                    (latest_date + timedelta(days=1)).strftime('%Y-%m-%d'),
+                    today.strftime('%Y-%m-%d'),
+                    f"更新最新数据（补齐 {days_gap} 天）"
+                ))
+
+            if existing_earliest_date:
+                earliest_date = datetime.strptime(existing_earliest_date, "%Y-%m-%d")
+
+                if earliest_date > target_date:
+                    end_date = earliest_date - timedelta(days=1)
+                    start_date = end_date - timedelta(days=365)
+
+                    if start_date < target_date:
+                        start_date = target_date
+
+                    days_to_fetch = (end_date - start_date).days
+                    ranges.append((
+                        start_date.strftime('%Y-%m-%d'),
+                        end_date.strftime('%Y-%m-%d'),
+                        f"补充历史数据（往前 {days_to_fetch} 天）"
+                    ))
+
+        return ranges
+
+    def get_stock_list(self):
+        """獲取所有上市股票列表"""
+        print("\n📋 正在获取台股列表...")
+
+        try:
+            stock_info = self.api.taiwan_stock_info()
+
+            if stock_info is not None and not stock_info.empty:
+                # 篩選上市股票（4位數代碼）
+                filtered = stock_info[
+                    (stock_info['type'] == 'twse') &
+                    (stock_info['stock_id'].str.len() == 4)
+                ]
+
+                # 建立股票代號到名稱的映射
+                self.stock_name_map = dict(
+                    zip(filtered['stock_id'], filtered['stock_name'])
+                )
+
+                sorted_stocks = sorted(filtered['stock_id'].unique().tolist())
+                print(f"✓ 获取到 {len(sorted_stocks)} 支上市股票")
+
+                # 保存股票列表到文件
+                self._save_stock_list(sorted_stocks)
+
+                return sorted_stocks
+            else:
+                print("❌ 无法获取股票列表")
+                return []
+
+        except Exception as e:
+            print(f"❌ 获取股票列表失败: {e}")
+            return []
+
+    def _save_stock_list(self, stocks):
+        """保存股票列表到文件"""
+        if not stocks:
+            return
+
+        # 保存為 TXT 文件（股票代號 + 中文名稱）
+        txt_path = self.output_dir / "stock_list.txt"
+        with open(txt_path, 'w', encoding='utf-8') as f:
+            for stock_id in stocks:
+                stock_name = self.stock_name_map.get(stock_id, '')
+                f.write(f"{stock_id}\t{stock_name}\n")
+
+        # 保存為 CSV 文件（方便 Excel 打開）
+        csv_path = self.output_dir / "stock_list.csv"
+        with open(csv_path, 'w', encoding='utf-8-sig') as f:
+            f.write("stock_id,stock_name\n")
+            for stock_id in stocks:
+                stock_name = self.stock_name_map.get(stock_id, '')
+                f.write(f"{stock_id},{stock_name}\n")
+
+        # 保存為 JSON 文件（包含詳細信息）
+        json_path = self.output_dir / "stock_list.json"
+        stock_list_with_names = [
+            {"stock_id": stock_id, "stock_name": self.stock_name_map.get(stock_id, '')}
+            for stock_id in stocks
+        ]
+        stock_info = {
+            "update_time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            "total_count": len(stocks),
+            "filter_criteria": {
+                "type": "twse",
+                "stock_id_length": 4
+            },
+            "stocks": stock_list_with_names
+        }
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(stock_info, f, ensure_ascii=False, indent=2)
+
+        print(f"✓ 股票列表已保存到:")
+        print(f"   - {txt_path} (制表符分隔)")
+        print(f"   - {csv_path} (CSV格式)")
+        print(f"   - {json_path} (JSON格式)")
+
+    def fetch_stock_data(self, stock_id, start_date, end_date):
+        """獲取單一股票的歷史數據"""
+        try:
+            df = self.api.taiwan_stock_daily(
+                stock_id=stock_id,
+                start_date=start_date,
+                end_date=end_date
+            )
+
+            if df is not None and not df.empty:
+                # 獲取股票名稱
+                stock_name = self.stock_name_map.get(stock_id, '')
+
+                df_clean = pd.DataFrame({
+                    'date': pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d'),
+                    'stock_id': df['stock_id'],
+                    'stock_name': stock_name,
+                    'open': df['open'],
+                    'high': df['max'],
+                    'low': df['min'],
+                    'close': df['close'],
+                    'volume': df['Trading_Volume']
+                })
+                return df_clean
+            else:
+                return None
+
+        except Exception:
+            return None
+
+    def fetch_batch(self, stock_list, start_date, end_date, delay=0.5):
+        """批量獲取股票數據"""
+        print(f"\n{'='*70}")
+        print(f"📥 开始获取数据: {start_date} 至 {end_date}")
+        print(f"{'='*70}\n")
+
+        all_data = []
+        total = len(stock_list)
+        success_count = 0
+        fail_count = 0
+
+        for idx, stock_id in enumerate(stock_list, 1):
+            percentage = (idx / total) * 100
+            print(f"[{idx}/{total}] ({percentage:.1f}%) {stock_id} ", end='', flush=True)
+
+            df = self.fetch_stock_data(stock_id, start_date, end_date)
+
+            if df is not None and not df.empty:
+                all_data.append(df)
+                success_count += 1
+                print(f"✓ {len(df)} 条")
+            else:
+                fail_count += 1
+                print("✗")
+
+            if idx < total:
+                time.sleep(delay)
+
+            if idx % 50 == 0:
+                print(f"\n   进度统计: 成功 {success_count} | 失败 {fail_count}\n")
+
+        if all_data:
+            final_df = pd.concat(all_data, ignore_index=True)
+            self._print_batch_summary(final_df, success_count, fail_count, total)
+            return final_df
+        else:
+            print("\n❌ 未获取到任何数据")
+            return pd.DataFrame()
+
+    def _print_batch_summary(self, df, success_count, fail_count, total):
+        """打印批次獲取摘要"""
+        print(f"\n{'='*70}")
+        print(f"✓ 本次获取完成")
+        print(f"  新增记录: {len(df):,} 条")
+        print(f"  成功股票: {success_count}/{total}")
+        print(f"  失败股票: {fail_count}/{total}")
+        print(f"{'='*70}\n")
+
+    def merge_and_save(self, new_df):
+        """合併新舊數據並保存"""
+        if new_df.empty:
+            print("⚠️  没有新数据需要保存")
+            return
+
+        if self.csv_path.exists():
+            print("📂 正在读取现有数据...")
+            existing_df = pd.read_csv(self.csv_path, dtype={'stock_id': str})
+            print(f"   现有记录: {len(existing_df):,} 条")
+
+            # 為舊數據填充缺失的 stock_name
+            if 'stock_name' not in existing_df.columns:
+                existing_df['stock_name'] = ''
+
+            # 填充空的 stock_name
+            mask = existing_df['stock_name'].isna() | (existing_df['stock_name'] == '')
+            if mask.any():
+                existing_df.loc[mask, 'stock_name'] = existing_df.loc[mask, 'stock_id'].map(
+                    self.stock_name_map
+                ).fillna('')
+
+            print("🔄 合并新旧数据...")
+            combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+
+            # 填充所有空的 stock_name
+            mask = combined_df['stock_name'].isna() | (combined_df['stock_name'] == '')
+            if mask.any():
+                combined_df.loc[mask, 'stock_name'] = combined_df.loc[mask, 'stock_id'].map(
+                    self.stock_name_map
+                ).fillna('')
+
+            print("🧹 去除重复记录...")
+            combined_df = combined_df.drop_duplicates(
+                subset=['date', 'stock_id'],
+                keep='last'
+            )
+        else:
+            print("📝 创建新数据文件...")
+            combined_df = new_df
+
+        print("📊 排序数据...")
+        combined_df = combined_df.sort_values(['date', 'stock_id']).reset_index(drop=True)
+
+        # 確保列順序正確
+        desired_columns = ['date', 'stock_id', 'stock_name', 'open', 'high', 'low', 'close', 'volume']
+        combined_df = combined_df[desired_columns]
+
+        print(f"💾 保存到 {self.csv_path}...")
+        combined_df.to_csv(self.csv_path, index=False, encoding='utf-8-sig')
+
+        self._print_save_summary(combined_df)
+
+    def _print_save_summary(self, df):
+        """打印保存摘要"""
+        file_size_mb = self.csv_path.stat().st_size / 1024 / 1024
+        date_range = f"{df['date'].min()} ~ {df['date'].max()}"
+        stock_count = df['stock_id'].nunique()
+
+        print(f"\n{'='*70}")
+        print(f"✅ 数据已保存")
+        print(f"   文件路径: {self.csv_path}")
+        print(f"   文件大小: {file_size_mb:.2f} MB")
+        print(f"   总记录数: {len(df):,} 条")
+        print(f"   股票数量: {stock_count} 支")
+        print(f"   日期范围: {date_range}")
+        print(f"{'='*70}\n")
+
+    def show_preview(self, df, n=5):
+        """顯示數據預覽"""
+        if df.empty:
+            return
+
+        print(f"数据预览（前 {n} 条）:")
+        print(df.head(n).to_string(index=False))
+        print()

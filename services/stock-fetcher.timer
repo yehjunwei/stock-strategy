@@ -1,0 +1,16 @@
+[Unit]
+Description=Taiwan Stock Data Fetcher Timer
+Requires=stock-fetcher.service
+
+[Timer]
+# 每小时运行一次
+OnCalendar=hourly
+# 延迟随机 0-300 秒，避免同一时间大量请求
+RandomizedDelaySec=300
+# 服务启动后立即运行一次
+OnBootSec=1min
+# 如果错过了执行时间，立即执行
+Persistent=true
+
+[Install]
+WantedBy=timers.target
