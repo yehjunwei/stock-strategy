@@ -1,0 +1,23 @@
+[Unit]
+Description=Taiwan Stock New High Checker
+After=network.target
+
+[Service]
+Type=oneshot
+User=YOUR_USERNAME
+WorkingDirectory=/path/to/stock-strategy
+ExecStart=/usr/bin/python3 /path/to/stock-strategy/scripts/check_new_high.py
+EnvironmentFile=/path/to/stock-strategy/.env
+
+# 日志输出
+StandardOutput=append:/var/log/check-new-high.log
+StandardError=append:/var/log/check-new-high.log
+
+# 环境变量
+Environment="PYTHONUNBUFFERED=1"
+
+# 超时设置（10分钟）
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

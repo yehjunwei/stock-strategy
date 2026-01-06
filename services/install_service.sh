@@ -51,17 +51,32 @@ if ! command -v pip3 &> /dev/null; then
 fi
 echo -e "${GREEN}✓ 找到 pip3${NC}\n"
 
+# 創建虛擬環境
+echo "創建 Python 虛擬環境..."
+VENV_DIR="${PROJECT_ROOT}/venv"
+if [ ! -d "${VENV_DIR}" ]; then
+    sudo -u ${REAL_USER} python3 -m venv "${VENV_DIR}"
+    echo -e "${GREEN}✓ 虛擬環境已創建: ${VENV_DIR}${NC}\n"
+else
+    echo -e "${YELLOW}虛擬環境已存在，跳過創建${NC}\n"
+fi
+
 # 安裝 Python 依賴
-echo "安裝 Python 依賴..."
-pip3 install -r "${SCRIPT_DIR}/../requirements.txt" --quiet
+echo "安裝 Python 依賴到虛擬環境..."
+sudo -u ${REAL_USER} "${VENV_DIR}/bin/pip" install -r "${PROJECT_ROOT}/requirements.txt" --quiet
 echo -e "${GREEN}✓ Python 依賴安裝完成${NC}\n"
 
 # 創建日誌目錄
 echo "創建日誌目錄..."
 mkdir -p /var/log
 touch /var/log/stock-fetcher.log
+touch /var/log/check-new-high.log
 chown ${REAL_USER}:${REAL_USER} /var/log/stock-fetcher.log
-echo -e "${GREEN}✓ 日誌文件: /var/log/stock-fetcher.log${NC}\n"
+chown ${REAL_USER}:${REAL_USER} /var/log/check-new-high.log
+echo -e "${GREEN}✓ 日誌文件已創建:${NC}"
+echo "  - /var/log/stock-fetcher.log"
+echo "  - /var/log/check-new-high.log"
+echo ""
 
 # 創建 data 目錄
 echo "創建數據目錄..."
@@ -82,22 +97,36 @@ else
 fi
 
 # 複製並配置 service 文件
-echo "配置 systemd service..."
-SERVICE_FILE="/etc/systemd/system/stock-fetcher.service"
-TIMER_FILE="/etc/systemd/system/stock-fetcher.timer"
+echo "配置 systemd services..."
+STOCK_FETCHER_SERVICE="/etc/systemd/system/stock-fetcher.service"
+STOCK_FETCHER_TIMER="/etc/systemd/system/stock-fetcher.timer"
+CHECK_HIGH_SERVICE="/etc/systemd/system/check-new-high.service"
+CHECK_HIGH_TIMER="/etc/systemd/system/check-new-high.timer"
 
 # 替換 service 文件中的佔位符
+VENV_PYTHON="${PROJECT_ROOT}/venv/bin/python3"
+
+# 配置 stock-fetcher service
 sed -e "s|YOUR_USERNAME|${REAL_USER}|g" \
     -e "s|/path/to/stock-strategy|${PROJECT_ROOT}|g" \
-    -e "s|/usr/bin/python3|${PYTHON_PATH}|g" \
-    "${SCRIPT_DIR}/stock-fetcher.service" > "${SERVICE_FILE}"
+    -e "s|/usr/bin/python3|${VENV_PYTHON}|g" \
+    "${SCRIPT_DIR}/stock-fetcher.service" > "${STOCK_FETCHER_SERVICE}"
 
-# 複製 timer 文件
-cp "${SCRIPT_DIR}/stock-fetcher.timer" "${TIMER_FILE}"
+cp "${SCRIPT_DIR}/stock-fetcher.timer" "${STOCK_FETCHER_TIMER}"
+
+# 配置 check-new-high service
+sed -e "s|YOUR_USERNAME|${REAL_USER}|g" \
+    -e "s|/path/to/stock-strategy|${PROJECT_ROOT}|g" \
+    -e "s|/usr/bin/python3|${VENV_PYTHON}|g" \
+    "${SCRIPT_DIR}/check-new-high.service" > "${CHECK_HIGH_SERVICE}"
+
+cp "${SCRIPT_DIR}/check-new-high.timer" "${CHECK_HIGH_TIMER}"
 
 echo -e "${GREEN}✓ Service 文件已創建:${NC}"
-echo "  - ${SERVICE_FILE}"
-echo "  - ${TIMER_FILE}"
+echo "  - ${STOCK_FETCHER_SERVICE}"
+echo "  - ${STOCK_FETCHER_TIMER}"
+echo "  - ${CHECK_HIGH_SERVICE}"
+echo "  - ${CHECK_HIGH_TIMER}"
 echo ""
 
 # 重載 systemd
@@ -105,11 +134,13 @@ echo "重載 systemd..."
 systemctl daemon-reload
 echo -e "${GREEN}✓ Systemd 已重載${NC}\n"
 
-# 啓用並啓動 timer
-echo "啓動 service..."
+# 啓用並啓動 timers
+echo "啓動 services..."
 systemctl enable stock-fetcher.timer
 systemctl start stock-fetcher.timer
-echo -e "${GREEN}✓ Timer 已啓動並設置爲開機自啓${NC}\n"
+systemctl enable check-new-high.timer
+systemctl start check-new-high.timer
+echo -e "${GREEN}✓ 所有 Timer 已啓動並設置爲開機自啓${NC}\n"
 
 # 顯示狀態
 echo -e "${GREEN}======================================${NC}"
@@ -117,22 +148,47 @@ echo -e "${GREEN}安裝完成！${NC}"
 echo -e "${GREEN}======================================${NC}\n"
 
 echo "服務信息:"
-echo "  - Service 名稱: stock-fetcher.service"
-echo "  - Timer 名稱: stock-fetcher.timer"
+echo ""
+echo "  【股票資料獲取服務】"
+echo "  - Service: stock-fetcher.service"
+echo "  - Timer: stock-fetcher.timer"
 echo "  - 運行頻率: 每小時一次"
 echo "  - 日誌文件: /var/log/stock-fetcher.log"
+echo ""
+echo "  【三年新高檢查服務】"
+echo "  - Service: check-new-high.service"
+echo "  - Timer: check-new-high.timer"
+echo "  - 運行頻率: 每天下午 3:30"
+echo "  - 日誌文件: /var/log/check-new-high.log"
+echo ""
+echo "  【共用設定】"
+echo "  - Python 環境: ${PROJECT_ROOT}/venv"
 echo "  - 數據文件: ${PROJECT_ROOT}/data/taiwan_stocks.csv"
 echo ""
 
 echo "常用命令:"
-echo "  查看 timer 狀態:    sudo systemctl status stock-fetcher.timer"
-echo "  查看 service 狀態:  sudo systemctl status stock-fetcher.service"
-echo "  查看執行歷史:       sudo journalctl -u stock-fetcher.service"
-echo "  查看日誌:           sudo tail -f /var/log/stock-fetcher.log"
-echo "  手動運行一次:       sudo systemctl start stock-fetcher.service"
-echo "  停止 timer:         sudo systemctl stop stock-fetcher.timer"
-echo "  禁用 timer:         sudo systemctl disable stock-fetcher.timer"
+echo ""
+echo "  【查看狀態】"
+echo "  股票資料獲取:       sudo systemctl status stock-fetcher.timer"
+echo "  三年新高檢查:       sudo systemctl status check-new-high.timer"
+echo ""
+echo "  【查看日誌】"
+echo "  股票資料獲取:       sudo tail -f /var/log/stock-fetcher.log"
+echo "  三年新高檢查:       sudo tail -f /var/log/check-new-high.log"
+echo "  執行歷史:           sudo journalctl -u stock-fetcher.service"
+echo "                      sudo journalctl -u check-new-high.service"
+echo ""
+echo "  【手動執行】"
+echo "  股票資料獲取:       sudo systemctl start stock-fetcher.service"
+echo "  三年新高檢查:       sudo systemctl start check-new-high.service"
+echo ""
+echo "  【停止/禁用】"
+echo "  停止所有 timers:    sudo systemctl stop stock-fetcher.timer check-new-high.timer"
+echo "  禁用所有 timers:    sudo systemctl disable stock-fetcher.timer check-new-high.timer"
 echo ""
 
-echo -e "${YELLOW}提示: Timer 將在下一個整點運行，或者你可以手動運行一次${NC}"
+echo -e "${YELLOW}提示:${NC}"
+echo "  - stock-fetcher 將在下一個整點運行（每小時）"
+echo "  - check-new-high 將在每天下午 3:30 運行"
+echo "  - 你也可以隨時手動運行"
 echo ""

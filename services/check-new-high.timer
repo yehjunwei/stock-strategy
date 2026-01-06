@@ -1,0 +1,12 @@
+[Unit]
+Description=Taiwan Stock New High Checker Timer
+Requires=check-new-high.service
+
+[Timer]
+# 每天下午 3:30 執行（台股收盤後）
+OnCalendar=*-*-* 15:30:00
+# 如果錯過了執行時間，立即執行
+Persistent=true
+
+[Install]
+WantedBy=timers.target
