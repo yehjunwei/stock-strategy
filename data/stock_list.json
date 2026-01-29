@@ -1,6 +1,6 @@
 {
-  "update_time": "2026-01-06 03:24:34",
-  "total_count": 1215,
+  "update_time": "2026-01-29 01:13:50",
+  "total_count": 1218,
   "filter_criteria": {
     "type": "twse",
     "stock_id_length": 4
@@ -721,6 +721,10 @@
     {
       "stock_id": "1618",
       "stock_name": "合機"
+    },
+    {
+      "stock_id": "1623",
+      "stock_name": "大東電"
     },
     {
       "stock_id": "1626",
@@ -4075,6 +4079,10 @@
       "stock_name": "力智"
     },
     {
+      "stock_id": "6722",
+      "stock_name": "輝創"
+    },
+    {
       "stock_id": "6742",
       "stock_name": "澤米"
     },
@@ -4384,7 +4392,7 @@
     },
     {
       "stock_id": "7780",
-      "stock_name": "大研生醫"
+      "stock_name": "大研生醫*"
     },
     {
       "stock_id": "7786",
@@ -4397,6 +4405,10 @@
     {
       "stock_id": "7791",
       "stock_name": "皇家可口"
+    },
+    {
+      "stock_id": "7795",
+      "stock_name": "長廣"
     },
     {
       "stock_id": "7799",

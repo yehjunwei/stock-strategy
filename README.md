@@ -61,10 +61,10 @@ LINE_USER_ID=your_line_user_id_here
 #### 📊 股票資料獲取
 ```bash
 # 使用虛擬環境
-./venv/bin/python3 scripts/fetch_stocks.py
+./venv/bin/python3 scripts/fetch_latest_stock_prices.py
 
 # 或者直接執行
-python scripts/fetch_stocks.py
+python scripts/fetch_latest_stock_prices.py
 ```
 
 **首次執行**: 獲取最近 1 年的資料
@@ -277,7 +277,7 @@ date,stock_id,open,high,low,close,volume
 
 ### 設定 Token
 
-編輯 `scripts/fetch_stocks.py` 主程式，修改 `api_token` 變數：
+編輯 `scripts/fetch_latest_stock_prices.py` 主程式，修改 `api_token` 變數：
 
 ```python
 api_token = "YOUR_API_TOKEN_HERE"  # 替換成你的 token
@@ -385,7 +385,7 @@ TARGET_START_DATE = "2000-01-01"  # 改成你想要的日期
 
 ### 只獲取特定股票
 
-修改 `scripts/fetch_stocks.py` 中的 `prepare_stock_list` 函式：
+修改 `scripts/fetch_latest_stock_prices.py` 中的 `prepare_stock_list` 函式：
 
 ```python
 def prepare_stock_list(fetcher, test_mode):
@@ -398,7 +398,7 @@ def prepare_stock_list(fetcher, test_mode):
 
 ### 調整請求延遲
 
-修改 `scripts/fetch_stocks.py` 中的 `fetch_all_ranges` 函式呼叫：
+修改 `scripts/fetch_latest_stock_prices.py` 中的 `fetch_all_ranges` 函式呼叫：
 
 ```python
 total_new = fetch_all_ranges(fetcher, stock_list, fetch_ranges, delay=1.0)
@@ -409,7 +409,7 @@ total_new = fetch_all_ranges(fetcher, stock_list, fetch_ranges, delay=1.0)
 ```
 stock-strategy/
 ├── scripts/
-│   ├── fetch_stocks.py          # 股票資料獲取主程式
+│   ├── fetch_latest_stock_prices.py          # 股票資料獲取主程式
 │   ├── check_new_high.py        # 三年新高檢查工具
 │   └── check_missing_data.py    # 資料完整性檢查工具
 ├── core/

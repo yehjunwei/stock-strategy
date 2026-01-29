@@ -10,13 +10,13 @@
 #### 臺股資料抓取
 ```bash
 # 執行臺股資料抓取（增量更新）
-python3 scripts/fetch_stocks.py
+python3 scripts/fetch_latest_stock_prices.py
 
 # 測試單一股票（例如：2330 臺積電）
-python3 scripts/fetch_stocks.py --test 2330
+python3 scripts/fetch_latest_stock_prices.py --test 2330
 
 # 測試另一支股票（例如：2317 鴻海）
-python3 scripts/fetch_stocks.py --test 2317
+python3 scripts/fetch_latest_stock_prices.py --test 2317
 ```
 
 **資料更新策略：**
@@ -50,7 +50,7 @@ stock-strategy/
 │   ├── __init__.py
 │   └── stock_fetcher.py      # TaiwanStockFetcher 類別
 ├── scripts/                  # 執行腳本
-│   └── fetch_stocks.py       # 主入口腳本
+│   └── fetch_latest_stock_prices.py       # 主入口腳本
 ├── services/                 # 系統服務設定
 │   ├── stock-fetcher.service
 │   ├── stock-fetcher.timer

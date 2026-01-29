@@ -151,11 +151,11 @@ sudo systemctl restart stock-fetcher.timer
 
 ### 修改 API Token
 
-編輯 `scripts/fetch_stocks.py` 主程式，修改 `api_token` 變數。
+編輯 `scripts/fetch_latest_stock_prices.py` 主程式，修改 `api_token` 變數。
 
 ### 修改請求延遲
 
-編輯 `scripts/fetch_stocks.py` 中的 `fetch_all_ranges` 函式呼叫：
+編輯 `scripts/fetch_latest_stock_prices.py` 中的 `fetch_all_ranges` 函式呼叫：
 
 ```python
 # 600次/小時 = 0.2秒/次（當前）

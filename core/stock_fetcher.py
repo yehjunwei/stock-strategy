@@ -19,7 +19,7 @@ except ImportError:
 class TaiwanStockFetcher:
     """臺股資料增量獲取器"""
 
-    TARGET_START_DATE = "2000-01-01"
+    TARGET_START_DATE = "2010-01-01"
     CSV_FILENAME = "taiwan_stocks.csv"
 
     def __init__(self, api_token=None, output_dir="data"):
@@ -81,20 +81,20 @@ class TaiwanStockFetcher:
 
         策略:
         1. 第一階段：從最新日期到今天（補齊最新資料）
-        2. 第二階段：從最早日期往回抓到 2000 年（補齊歷史資料）
+        2. 第二階段：從最早日期往回抓到 2010-01-01（補齊歷史資料）
 
         返回: [(start_date, end_date, description), ...]
         """
         ranges = []
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        target_date = datetime.strptime(self.TARGET_START_DATE, "%Y-%m-%d")
+        target_start_date = datetime.strptime(self.TARGET_START_DATE, "%Y-%m-%d")
 
         if existing_latest_date is None:
-            start_date = today - timedelta(days=365)
+            start_date = today - timedelta(days=30)
             ranges.append((
                 start_date.strftime('%Y-%m-%d'),
                 today.strftime('%Y-%m-%d'),
-                "首次執行（最近1年）"
+                "首次執行（最近30天）"
             ))
         else:
             latest_date = datetime.strptime(existing_latest_date, "%Y-%m-%d")
@@ -110,12 +110,12 @@ class TaiwanStockFetcher:
             if existing_earliest_date:
                 earliest_date = datetime.strptime(existing_earliest_date, "%Y-%m-%d")
 
-                if earliest_date > target_date:
+                if earliest_date > target_start_date:
                     end_date = earliest_date - timedelta(days=1)
-                    start_date = end_date - timedelta(days=365)
+                    start_date = end_date - timedelta(days=30)
 
-                    if start_date < target_date:
-                        start_date = target_date
+                    if start_date < target_start_date:
+                        start_date = target_start_date
 
                     days_to_fetch = (end_date - start_date).days
                     ranges.append((
@@ -246,21 +246,6 @@ class TaiwanStockFetcher:
         if not stocks:
             return
 
-        # 儲存為 TXT 檔案（股票代號 + 中文名稱）
-        txt_path = self.output_dir / "stock_list.txt"
-        with open(txt_path, 'w', encoding='utf-8') as f:
-            for stock_id in stocks:
-                stock_name = self.stock_name_map.get(stock_id, '')
-                f.write(f"{stock_id}\t{stock_name}\n")
-
-        # 儲存為 CSV 檔案（方便 Excel 開啟）
-        csv_path = self.output_dir / "stock_list.csv"
-        with open(csv_path, 'w', encoding='utf-8-sig') as f:
-            f.write("stock_id,stock_name\n")
-            for stock_id in stocks:
-                stock_name = self.stock_name_map.get(stock_id, '')
-                f.write(f"{stock_id},{stock_name}\n")
-
         # 儲存為 JSON 檔案（包含詳細資訊）
         json_path = self.output_dir / "stock_list.json"
         stock_list_with_names = [
@@ -279,10 +264,7 @@ class TaiwanStockFetcher:
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(stock_info, f, ensure_ascii=False, indent=2)
 
-        print(f"✓ 股票列表已儲存到:")
-        print(f"   - {txt_path} (Tab 字元分隔)")
-        print(f"   - {csv_path} (CSV格式)")
-        print(f"   - {json_path} (JSON格式)")
+        print(f"✓ 股票列表已儲存到: {json_path}")
 
     def fetch_stock_data(self, stock_id, start_date, end_date):
         """獲取單一股票的歷史資料"""

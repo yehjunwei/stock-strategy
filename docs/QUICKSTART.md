@@ -54,13 +54,13 @@ pip install -r requirements.txt
 ### 2. 執行程式
 
 ```bash
-python scripts/fetch_stocks.py
+python scripts/fetch_latest_stock_prices.py
 ```
 
 ### 3. 再次執行（補充更多資料）
 
 ```bash
-python scripts/fetch_stocks.py
+python scripts/fetch_latest_stock_prices.py
 ```
 
 每次執行會往前補充 1 年資料，重複約 25 次即可補齊到 2000 年。
