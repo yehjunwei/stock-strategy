@@ -210,27 +210,31 @@ def main():
                 total_new = len(new_df)
                 fetcher.merge_and_save(new_df)
 
-        # 檢查三年新高
-        print("\n" + "="*70)
-        print("🔍 檢查三年新高...")
-        print("="*70 + "\n")
+        # 檢查三年新高（僅在資料為最新時執行）
+        _, _, latest, _ = fetcher.get_existing_data_info()
+        if latest != yesterday:
+            print(f"\n⚠️  資料不是最新（最新: {latest}，預期: {yesterday}），跳過新高檢查\n")
+        else:
+            print("\n" + "="*70)
+            print("🔍 檢查三年新高...")
+            print("="*70 + "\n")
 
-        data_file = fetcher.csv_path
-        if data_file.exists():
-            df = pd.read_csv(data_file)
-            new_highs = check_new_highs(df, years=3)
+            data_file = fetcher.csv_path
+            if data_file.exists():
+                df = pd.read_csv(data_file)
+                new_highs = check_new_highs(df, years=3)
 
-            if new_highs:
-                print(f"🎉 發現 {len(new_highs)} 支股票創三年新高！\n")
-                for stock in new_highs[:5]:
-                    print(f"  • {stock['stock_name']} ({stock['stock_id']})")
-                    print(f"    最新高: ${stock['latest_high']:.2f} (前高: ${stock['previous_high']:.2f})")
-                    print(f"    突破幅度: +{stock['increase_pct']:.2f}%\n")
+                if new_highs:
+                    print(f"🎉 發現 {len(new_highs)} 支股票創三年新高！\n")
+                    for stock in new_highs[:5]:
+                        print(f"  • {stock['stock_name']} ({stock['stock_id']})")
+                        print(f"    最新高: ${stock['latest_high']:.2f} (前高: ${stock['previous_high']:.2f})")
+                        print(f"    突破幅度: +{stock['increase_pct']:.2f}%\n")
 
-                if len(new_highs) > 5:
-                    print(f"  ... 及其他 {len(new_highs) - 5} 支股票\n")
-            else:
-                print("ℹ️  今日無股票創三年新高\n")
+                    if len(new_highs) > 5:
+                        print(f"  ... 及其他 {len(new_highs) - 5} 支股票\n")
+                else:
+                    print("ℹ️  今日無股票創三年新高\n")
 
         # 顯示最終狀態
         _, earliest, latest, count = fetcher.get_existing_data_info()
@@ -271,12 +275,15 @@ def main():
         fetch_message = f"【股市資料獲取報告 - {hostname}】{summary_text}"
         send_line_message(fetch_message)
 
-        # 新高通知（獨立訊息）
-        new_high_message = format_new_high_notification(new_highs, years=3)
-        if new_high_message:
-            send_line_message(new_high_message)
+        # 新高通知（僅在資料為最新時發送）
+        if latest == yesterday:
+            new_high_message = format_new_high_notification(new_highs, years=3)
+            if new_high_message:
+                send_line_message(new_high_message)
+            else:
+                send_line_message(f"📊 {latest} 無股票創 3 年新高")
         else:
-            send_line_message(f"📊 {latest} 無股票創 3 年新高")
+            send_line_message(f"⚠️ 資料未更新至 {yesterday}（目前最新: {latest}），跳過新高檢查")
 
 
 if __name__ == "__main__":
